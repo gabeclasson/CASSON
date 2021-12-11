@@ -75,7 +75,7 @@ class PrefixOperator(Operator):
         return f"{self.symbol}{str(child)}"
 
 class BinaryOperator(Operator):
-    min_args = 2
+    min_args, max_args = 2, 2
     max_args = 2
     is_left_associative = True
     is_right_associative = True
@@ -83,14 +83,14 @@ class BinaryOperator(Operator):
     str_spacing = ""
 
     def __str__(self):
-        left = self.children[0]
-        right = self.children[1]
-        left_str = str(left)
-        right_str = str(right)
-        if issubclass(type(left), Operator) and (left.precedence < self.precedence or (left.precedence == self.precedence and not self.is_left_associative)):
-            left_str = "(" + left_str + ")"
-        if issubclass(type(right), Operator) and (right.precedence < self.precedence or (right.precedence == self.precedence and not self.is_right_associative)):
-            right_str = "(" + right_str + ")"
+        left, right = self.children
+        left_str, right_str = str(left), str(right)
+        if issubclass(type(left), Operator) and (left.precedence < self.precedence or 
+            (left.precedence == self.precedence and not self.is_left_associative)):
+            left_str = f"({left_str})"
+        if issubclass(type(right), Operator) and (right.precedence < self.precedence or 
+            (right.precedence == self.precedence and not self.is_right_associative)):
+            right_str = f"({right_str})"
         return f"{left_str}{self.str_spacing}{self.symbol}{self.str_spacing}{right_str}"
 
 class Leaf(Node):
@@ -172,7 +172,10 @@ class Multiply(BinaryOperator):
 
     def derivative(self, symbol):
         x, y = self.children
-        return Add([Multiply([x.derivative(symbol), y]), Multiply([y.derivative(symbol), x])]).simplify()
+        return Add([
+                Multiply([x.derivative(symbol), y]), 
+                Multiply([y.derivative(symbol), x])
+            ]).simplify()
 
     def simplify(self):
         self = super().simplify()
@@ -233,7 +236,13 @@ class Divide(BinaryOperator):
 
     def derivative(self, symbol):
         x, y = self.children
-        return Divide([Subtract([Multiply([x.derivative(symbol), y]), Multiply([y.derivative(symbol), x])]), Power([y, NUMBER_2])]).simplify()
+        return Divide([
+                Subtract([
+                    Multiply([x.derivative(symbol), y]), 
+                    Multiply([y.derivative(symbol), x])
+                ]), 
+                Power([y, NUMBER_2])
+            ]).simplify()
 
     def simplify(self):
         self = super().simplify()

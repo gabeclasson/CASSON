@@ -21,8 +21,7 @@ until it reaches a binary operator of higher precedence than
 the limiting operator, at which point it will return the index. 
 """
 def parse_partial(tokens, index, limiting_operator, previous): 
-    token = tokens[index]
-    new_index = index
+    new_index, token = index, tokens[index]
     # Subexpression parsing
     if token == "(":
         parsed, new_index = parse_partial(tokens, index + 1, Operator, None)
@@ -31,15 +30,16 @@ def parse_partial(tokens, index, limiting_operator, previous):
     else: 
         parsed = parse_primitive(token, previous is not None)
     new_index += 1
-
     # If the primitive is a Function class, we construct the function node and
     # parse relevant subexpressions
     if inspect.isclass(parsed) and issubclass(parsed, Function): 
         # Unary function
         if issubclass(parsed, UnaryFunction):
-            assert new_index < len(tokens) and tokens[new_index] == "(", "Unary function calls require parentheses"
+            assert new_index < len(tokens) and tokens[new_index] == "(", \
+                "Unary function calls require parentheses"
             argument, new_index = parse_partial(tokens, new_index + 1, Operator, None)
-            assert new_index < len(tokens) and tokens[new_index] == ")", "Mismatched parentheses in unary function call"
+            assert new_index < len(tokens) and tokens[new_index] == ")", \
+                "Mismatched parentheses in unary function call"
             new_index += 1
             parsed = parsed([argument])
         # Prefix operator
@@ -51,10 +51,9 @@ def parse_partial(tokens, index, limiting_operator, previous):
             assert previous, "Binary operator missing first argument"
             next_parsed, new_index = parse_partial(tokens, new_index, parsed, previous)
             parsed = parsed([previous, next_parsed])
-
-    # Now that we have parsed the current node, we must look to the next token 
-    # to determine whether to return the current node or continue parsing to 
-    # the right. This is based on operator precedence.
+    # Now that parsed contains the processed, current node, we must look to 
+    # the next token to determine whether to return the current node or 
+    # continue parsing to the right. This is based on operator precedence.
     if new_index < len(tokens) and tokens[new_index] != ")": 
         if tokens[new_index] != "(":
             next_operator = parse_primitive(tokens[new_index], True)
